@@ -338,21 +338,46 @@ class snail_probe_designer:
             scored_probe_pairs.append((probe_pair[0], probe_pair[1], probe_pair[2], mixed_score))
         self.scored_probe_pairs = sorted(scored_probe_pairs, key=lambda tup: tup[3])
 
-    def get_top_probes(self, top_x = 5):
+    def get_top_probes(self, top_x = 5, no_overlap=True):
         """
         Return the top X kmers (the X number of kmers with the lowest scores)
 
         Input:
         top_x = the desired number of probe pairs (e.g. top_x = 5 means 5 probe pairs or 10 total oligo probes). Default is 5.
+        no_overlap = do not show overlapping probe pairs. Default is True
         
+        Output:
+        returns a list of the top_x non-overlapping probes (unless otherwise specified)
+
         Usage:
         spd = snail_probe_designer()
         spd.prime(filename, gene_name)
         spd.get_kmers()
         spd.score_kmers()
-        spd.get_top_kmers()
+        spd.get_top_probess()
         """
-        return(self.scored_probe_pairs[:top_x])
+
+        # init a list of probes that are in the top x and meet additional criteria
+        top_list = [self.scored_probe_pairs[0]]
+
+        # get the number of probes in the designer
+        n_probes = len(self.scored_probe_pairs)
+
+        # for each probe pair in the self contained list of pairs (until top_x is met)
+        for i in range(1, n_probes):
+        	new_probe = self.scored_probe_pairs[i]
+        	overlap_flag = 0
+        	# check to see if it overlaps with a top probe pair
+        	for probe in top_list:
+        		if not self.check_overlaps(new_probe, probe):
+        			overlap_flag += 1
+        	# if the new probe does not overlap with a top probe, add it
+        	if overlap_flag is len(top_list):
+        		top_list.append(new_probe)
+        	# if the list is long enough break and return
+        	if len(top_list) is top_x:
+        		break
+        return(top_list)
 
     def write_probes_to_csv(self, filename, num_probes='all'):
         """
@@ -470,7 +495,81 @@ class snail_probe_designer:
         # finished writing, close the workbook
         workbook.close()
 
-    def sanity_check_probes(self, n_probes=5)
+    def sanity_check_probes(self, n_probes=5, probes_to_hl=[]):
+    	"""
+		Creates an html file with the sequence in fasta format. Probe pairs are highlighted (split and padlock). Useful for sanity checking the probes
+		---
+		Input:
+        n_probes = number of probes to highlight. Default is 5
+        probes_to_hl =  a list of probe pairs to highlight in the fasta file 
+
+        Output:
+        an html file with the fasta sequence and probe pairs highlighted
+    	"""
+
+    	# check to see if any probe pairs were passed in the list (as a tuple)
+    	if len(probes_to_hl) is not 0:
+    		if type(probes_to_hl[0]) is tuple:
+    			# TODO
+    			print("List of probe pairs passed.")
+    	else:
+    		# no probes passed, just highlight n_probes non-overlapping probes
+    		# TODO
+    		pass
+
+    def check_overlap(self, p1, p2):
+    	"""
+    	Checks if probes p1 and p2 overlap. True if p1 and p2 overlap and false otherwise.
+
+    	Input:
+    	p1 = probe sequence 1
+    	p2 = probe sequence 2
+
+    	Output:
+    	returns true if the probes overlap and false otherwise.
+    	"""
+    	revcomp_seq = rev_comp(self.sequence)
+
+    	# get start and end idices for p1 and p2
+    	p1_startix = revcomp_seq.index(p1)
+    	p1_endix = p1_startix + len(p1) - 1
+    	p2_startix = revcomp_seq.index(p2)
+    	p2_endix = p2_startix + len(p2) - 1
+
+    	# debugging
+    	#print("p1 start {}, p1 end {}, p2 start {}, p2 end {}".format(p1_startix, p1_endix, p2_startix, p2_endix))
+
+    	# if p1 ends before p2 starts and if p2 ends before p1 starts
+    	if p1_endix < p2_startix or p2_endix < p2_startix:
+    		return(False)
+    	# otherwise assume overlap
+    	return(True)
+
+    def check_overlaps(self, pair1, pair2):
+    	"""
+    	Checks if probe pair 1 and probe pair 2 do not overlap.
+
+    	Input:
+    	pair1 = a probe pair in the form of a tuple (e.g. (padlock, splint,...))
+    	pair2 = a probe pair in the same form as pair1
+
+    	Output:
+    	returns true if the probe pairs overlap and false otherwise.
+    	"""
+    	# check to make sure that:
+    	# 1. splints do not overlap
+    	cond1 = self.check_overlap(pair1[1], pair2[1])
+    	# 2. padlocks do not overlap
+    	cond2 = self.check_overlap(pair1[0], pair2[0])
+    	# 3. splint 1 does not overlap with padlock 2
+    	cond3 = self.check_overlap(pair1[1], pair2[0])
+    	# 4. padlock 1 does not overlap with splint 2
+    	cond4 = self.check_overlap(pair1[0], pair2[1])
+    	# check all conditions and add to list
+    	if (not cond1) and (not cond2) and (not cond3) and (not cond4):
+    		return(False)
+    	return(True)
+
 
 # if __name__ == "__main__":
 #     main()
