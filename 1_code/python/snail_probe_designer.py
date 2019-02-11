@@ -37,7 +37,7 @@ def rev_comp(in_str, d = 0):
         conversion = {"A":"U", "T":"A", "G":"C", "C":"G"} # dna to rna
     elif d == 3:
         conversion = {"A":"U", "U":"A", "G":"C", "C":"G"} # rna to rna
-    return "".join(conversion.get(base, base) for base in reversed(in_str))
+    return "".join(conversion.get(base, base) for base in reversed(in_str.upper()))
 
 def calc_gc(p):
     """
@@ -358,26 +358,26 @@ class snail_probe_designer:
         """
 
         # init a list of probes that are in the top x and meet additional criteria
-        top_list = [self.scored_probe_pairs[0]]
+        top_probes = [self.scored_probe_pairs[0]]
 
         # get the number of probes in the designer
         n_probes = len(self.scored_probe_pairs)
 
         # for each probe pair in the self contained list of pairs (until top_x is met)
         for i in range(1, n_probes):
-        	new_probe = self.scored_probe_pairs[i]
-        	overlap_flag = 0
-        	# check to see if it overlaps with a top probe pair
-        	for probe in top_list:
-        		if not self.check_overlaps(new_probe, probe):
-        			overlap_flag += 1
-        	# if the new probe does not overlap with a top probe, add it
-        	if overlap_flag is len(top_list):
-        		top_list.append(new_probe)
-        	# if the list is long enough break and return
-        	if len(top_list) is top_x:
-        		break
-        return(top_list)
+            new_probe = self.scored_probe_pairs[i]
+            overlap_flag = 0
+            # check to see if it overlaps with a top probe pair
+            for probe in top_probes:
+                if not self.check_overlaps(new_probe, probe):
+                    overlap_flag += 1
+            # if the new probe does not overlap with a top probe, add it
+            if overlap_flag is len(top_probes):
+                top_probes.append(new_probe)
+            # if the list is long enough break and return
+            if len(top_probes) is top_x:
+                break
+        return(top_probes)
 
     def write_probes_to_csv(self, filename, num_probes='all'):
         """
@@ -430,10 +430,10 @@ class snail_probe_designer:
         Input:
         filename = the name and path of the file to write the probe information to as a string 
         num_probes = the number of probe pairs to write save. Default is 5
-		product = the type of product being requested from Eurogentec. Default is 'Custom Oligos'
-		syn_scale = the synthesis scale of the oligos. Default is '40 nmol (10-99 bases)'
-		pur = the purity of the oligos. Default is 'SePOP Desalted'
-		form = The form that the oligos will be sent in. Default is 'Dried'
+        product = the type of product being requested from Eurogentec. Default is 'Custom Oligos'
+        syn_scale = the synthesis scale of the oligos. Default is '40 nmol (10-99 bases)'
+        pur = the purity of the oligos. Default is 'SePOP Desalted'
+        form = The form that the oligos will be sent in. Default is 'Dried'
 
         Output:
         the file containing the probe information is written to the given filename and folder as a .xlsx
@@ -495,80 +495,105 @@ class snail_probe_designer:
         # finished writing, close the workbook
         workbook.close()
 
-    def sanity_check_probes(self, n_probes=5, probes_to_hl=[]):
-    	"""
-		Creates an html file with the sequence in fasta format. Probe pairs are highlighted (split and padlock). Useful for sanity checking the probes
-		---
-		Input:
+    def sanity_check_probes(self, filename, n_probes=5, probes_to_hl=[]):
+        """
+        Creates a html file with the sequence in fasta format. Probe pairs are highlighted (splint and padlock). Useful for sanity checking the probes
+        ---
+        Input:
+        filename = name and path of the docx file to write to. Required
         n_probes = number of probes to highlight. Default is 5
-        probes_to_hl =  a list of probe pairs to highlight in the fasta file 
+        probes_to_hl =  a list of probe pairs to highlight in the fasta file (NOT the probe targets in the sequence)
 
         Output:
         an html file with the fasta sequence and probe pairs highlighted
-    	"""
+        """
+        import webbrowser
+        seq = self.sequence.upper()
+        # if no probes are provided, get the top_x probes
+        if len(probes_to_hl) is 0:
+            # get the reverse complement of the top n probes
+            top_probes = self.get_top_probes(top_x = n_probes)
+            for probe_pair in top_probes:
+                probes_to_hl.append((probe_pair[0], probe_pair[1]))
+        # reverse complement all of the probes
+        probes_to_hl = [(rev_comp(i[0]).upper(), rev_comp(i[1]).upper()) for i in probes_to_hl]
+        # split up the fasta file by the probes
+        file_start = '<html>\n<head></head>\n<body><h1>{}</h1><div style="width: 50%; word-wrap: break-word;"><p>'.format(self.gene_name.upper())
+        file_end = '</p><p>Padlocks are in <span style="background-color: #FFFF00"> yellow</span>.</p><p>Splints are in <span style="background-color: #008000">green</span>.</p></div></body></html>'
+        las_idx = 0
+        for probe_pair in probes_to_hl:
+            padlock = probe_pair[0]
+            splint = probe_pair[1]
 
-    	# check to see if any probe pairs were passed in the list (as a tuple)
-    	if len(probes_to_hl) is not 0:
-    		if type(probes_to_hl[0]) is tuple:
-    			# TODO
-    			print("List of probe pairs passed.")
-    	else:
-    		# no probes passed, just highlight n_probes non-overlapping probes
-    		# TODO
-    		pass
+            # create the formatting strings
+            formatted_padlock = '<span style="background-color: #FFFF00">{}</span>'.format(padlock)
+            formatted_splint = '<span style="background-color: #008000">{}</span>'.format(splint)
+            # replace the substring with html formatting appended
+            seq = seq.replace(padlock, formatted_padlock)
+            seq = seq.replace(splint, formatted_splint)
+
+        file_contents = file_start + seq + file_end
+        with open(filename, 'w') as f:
+        	f.write(file_contents)
+        	f.close()
+
+        print("Document successfully written to {}".format(filename))
+        webbrowser.open_new_tab(filename)
+
+
 
     def check_overlap(self, p1, p2):
-    	"""
-    	Checks if probes p1 and p2 overlap. True if p1 and p2 overlap and false otherwise.
+        """
+        Checks if probes p1 and p2 overlap. True if p1 and p2 overlap and false otherwise.
 
-    	Input:
-    	p1 = probe sequence 1
-    	p2 = probe sequence 2
+        Input:
+        p1 = probe sequence 1
+        p2 = probe sequence 2
 
-    	Output:
-    	returns true if the probes overlap and false otherwise.
-    	"""
-    	revcomp_seq = rev_comp(self.sequence)
+        Output:
+        returns true if the probes overlap and false otherwise.
+        """
+        revcomp_seq = rev_comp(self.sequence)
 
-    	# get start and end idices for p1 and p2
-    	p1_startix = revcomp_seq.index(p1)
-    	p1_endix = p1_startix + len(p1) - 1
-    	p2_startix = revcomp_seq.index(p2)
-    	p2_endix = p2_startix + len(p2) - 1
+        # get start and end idices for p1 and p2
+        p1_startix = revcomp_seq.index(p1)
+        p1_endix = p1_startix + len(p1) - 1
+        p2_startix = revcomp_seq.index(p2)
+        p2_endix = p2_startix + len(p2) - 1
 
-    	# debugging
-    	#print("p1 start {}, p1 end {}, p2 start {}, p2 end {}".format(p1_startix, p1_endix, p2_startix, p2_endix))
+        # debugging
+        #print("p1 start {}, p1 end {}, p2 start {}, p2 end {}".format(p1_startix, p1_endix, p2_startix, p2_endix))
 
-    	# if p1 ends before p2 starts and if p2 ends before p1 starts
-    	if p1_endix < p2_startix or p2_endix < p2_startix:
-    		return(False)
-    	# otherwise assume overlap
-    	return(True)
+        # if p1 ends before p2 starts and if p2 ends before p1 starts
+        if p1_endix < p2_startix or p2_endix < p2_startix:
+            return(False)
+        # otherwise assume overlap
+        return(True)
 
     def check_overlaps(self, pair1, pair2):
-    	"""
-    	Checks if probe pair 1 and probe pair 2 do not overlap.
+        """
+        Checks if probe pair 1 and probe pair 2 do not overlap.
 
-    	Input:
-    	pair1 = a probe pair in the form of a tuple (e.g. (padlock, splint,...))
-    	pair2 = a probe pair in the same form as pair1
+        Input:
+        pair1 = a probe pair in the form of a tuple (e.g. (padlock, splint,...))
+        pair2 = a probe pair in the same form as pair1
 
-    	Output:
-    	returns true if the probe pairs overlap and false otherwise.
-    	"""
-    	# check to make sure that:
-    	# 1. splints do not overlap
-    	cond1 = self.check_overlap(pair1[1], pair2[1])
-    	# 2. padlocks do not overlap
-    	cond2 = self.check_overlap(pair1[0], pair2[0])
-    	# 3. splint 1 does not overlap with padlock 2
-    	cond3 = self.check_overlap(pair1[1], pair2[0])
-    	# 4. padlock 1 does not overlap with splint 2
-    	cond4 = self.check_overlap(pair1[0], pair2[1])
-    	# check all conditions and add to list
-    	if (not cond1) and (not cond2) and (not cond3) and (not cond4):
-    		return(False)
-    	return(True)
+        Output:
+        returns true if the probe pairs overlap and false otherwise.
+        """
+        # check to make sure that:
+        # 1. splints do not overlap
+        cond1 = self.check_overlap(pair1[1], pair2[1])
+        # 2. padlocks do not overlap
+        cond2 = self.check_overlap(pair1[0], pair2[0])
+        # 3. splint 1 does not overlap with padlock 2
+        cond3 = self.check_overlap(pair1[1], pair2[0])
+        # 4. padlock 1 does not overlap with splint 2
+        cond4 = self.check_overlap(pair1[0], pair2[1])
+        # check all conditions and add to list
+        if (not cond1) and (not cond2) and (not cond3) and (not cond4):
+            return(False)
+        return(True)
 
 
 # if __name__ == "__main__":
