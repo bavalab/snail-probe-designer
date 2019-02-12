@@ -6,7 +6,7 @@ Author: Eric Cramer <eric.cramer@curie.fr>
 """
 
 # Import necessary dependencies
-import math
+import math, os
 from itertools import groupby
 
 # Utility functions
@@ -538,9 +538,7 @@ class snail_probe_designer:
         	f.close()
 
         print("Document successfully written to {}".format(filename))
-        webbrowser.open_new_tab(filename)
-
-
+        webbrowser.open_new_tab('file://' + os.path.realpath(filename))
 
     def check_overlap(self, p1, p2):
         """

@@ -7,7 +7,8 @@
 # A GUI for the SNAIL Probe Designer
 # Allows you to upload a fasta file or input a fasta sequence to generate smFISH SNAIL probes 
 
-import tkinter, os, snail_probe_designer
+import tkinter, os
+import snail_probe_designer as SPD
 
 class spd_gui(tkinter.Tk):
     """
@@ -50,29 +51,71 @@ class spd_gui(tkinter.Tk):
         quitButton = tkinter.Button(self, text="Quit", command=self.quitClient)
         quitButton.grid(column=3, row=0)
 
+        # add text boxes for the melting temperature
+        self.minMeltingTempVar = tkinter.StringVar()
+        self.minMeltingTemp = tkinter.Entry(self, textvariable=self.minMeltingTempVar)
+        self.minMeltingTemp.grid(column=0, row=1, sticky='EW')
+        self.minMeltingTempVar.set("Minimum melting temperature (C)")
+        self.maxMeltingTempVar = tkinter.StringVar()
+        self.maxMeltingTemp = tkinter.Entry(self, textvariable=self.maxMeltingTempVar)
+        self.maxMeltingTemp.grid(column=1, row=1, sticky='EW')
+        self.maxMeltingTempVar.set("Maximum melting temperature (C)")
+
+        # add text boxes for the GC content
+        self.gContentVar = tkinter.StringVar()
+        self.gContent = tkinter.Entry(self, textvariable=self.gContentVar)
+        self.gContent.grid(column=2, row=1, sticky='EW')
+        self.gContentVar.set("G Content")
+        self.cContentVar = tkinter.StringVar()
+        self.cContent = tkinter.Entry(self, textvariable=self.cContentVar)
+        self.cContent.grid(column=3, row=1, sticky='EW')
+        self.cContentVar.set("C Content")
+
         # add a label for instructions
         self.instructionsLabelVar = tkinter.StringVar()
-        instructionsLabel = tkinter.Label(self, textvariable=self.instructionsLabelVar, anchor='w', fg='black', bg='white')
-        instructionsLabel.grid(column=0, row=1, columnspan=4, sticky='EW')
-        instructions = "Welcome to the SNAIL Probe Designer\nTo use the program:\n1. Input the sequence you want to design probes for into the first box\n2. Input the name of the sequence into the second box\n3. Click 'Go'\n\nThe most highly rated probe targets will be displayed in this window, and the full probes will be written to a csv and Eurogentec formatted excel file. Finally, a 'sanity check' of the sequence with the probe targets highlighted will be written to a separate html file."
+        instructionsLabel = tkinter.Label(self, 
+        	textvariable=self.instructionsLabelVar, 
+        	anchor='w', 
+        	fg='black', 
+        	bg='white', wraplength=300, justify=tkinter.LEFT)
+        instructionsLabel.grid(column=0, row=2, columnspan=4, sticky='EW')
+        instructions = "\nWelcome to the SNAIL Probe Designer\nTo use the program:\n1. Input the sequence you want to design probes for into the first box\n2. Input the name of the sequence into the second box\n3. Click 'Go'\n\nThe most highly rated probe targets will be displayed in this window, and the full probes will be written to a csv and Eurogentec formatted excel file. Finally, a 'sanity check' of the sequence with the probe targets highlighted will be written to a separate html file."
         self.instructionsLabelVar.set(instructions)
 
         # add a label for output
         self.outputLabelVar = tkinter.StringVar()
         output_label = tkinter.Label(self, textvariable=self.outputLabelVar, anchor='w', fg='blue', bg='white')
-        output_label.grid(column=0, row=2, columnspan=4, sticky='EW')
+        output_label.grid(column=0, row=3, columnspan=4, sticky='EW')
 
 
     def quitClient(self):
         exit()
 
-    def goClient(self):
-        # uses the default settings for gc, tm, size, and separation
-        spd = snail_probe_designer.snail_probe_designer(tm=(55,60),gc=(40,60)) 
+    # def getParams(self):
+    #     seq = self.sequenceVar.get()
+    #     geneName = self.geneNameVar.get()
+    #     minT = self.minMeltingTempVar.get()
+    #     maxT = self.maxMeltingTempVar.get()
+    #     gCont = self.gContentVar.get()
+    #     cCont = self.cContentVar.get()
 
-        # get the sequence from the GUI
+    #     # check to make sure the input is numeric    	
+
+
+    def goClient(self):
+    	# get the parameters from the GUI
         seq = self.sequenceVar.get()
         geneName = self.geneNameVar.get()
+        minT = float(self.minMeltingTempVar.get())
+        maxT = float(self.maxMeltingTempVar.get())
+        tm = (minT, maxT)
+        gCont = float(self.gContentVar.get())
+        cCont = float(self.cContentVar.get())
+        gc = (gCont, cCont)
+
+        # uses the default settings for gc, tm, size, and separation
+        spd=SPD.snail_probe_designer(tm=tm, gc=gc) 
+
         spd.prime(seq, geneName)
         spd.get_kmers()
         spd.score_kmers()
