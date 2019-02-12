@@ -519,7 +519,7 @@ class snail_probe_designer:
         probes_to_hl = [(rev_comp(i[0]).upper(), rev_comp(i[1]).upper()) for i in probes_to_hl]
         # split up the fasta file by the probes
         file_start = '<html>\n<head></head>\n<body><h1>{}</h1><div style="width: 50%; word-wrap: break-word;"><p>'.format(self.gene_name.upper())
-        file_end = '</p><p>Padlocks are in <span style="background-color: #FFFF00"> yellow</span>.</p><p>Splints are in <span style="background-color: #008000">green</span>.</p></div></body></html>'
+        file_end = '</p><p>Padlock targets are in <span style="background-color: #FFFF00"> yellow</span>.</p><p>Splint targets are in <span style="background-color: #008000">green</span>.</p></div></body></html>'
         las_idx = 0
         for probe_pair in probes_to_hl:
             padlock = probe_pair[0]
