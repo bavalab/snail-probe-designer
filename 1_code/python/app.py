@@ -7,6 +7,18 @@
 # A GUI for the SNAIL Probe Designer
 # Allows you to upload a fasta file or input a fasta sequence to generate smFISH SNAIL probes 
 
+# TODOs:
+# 1. change the GC content selection to a slider for G content, then derive c content from 100-G content
+# 2. add a directory selection dialog to get the output directory
+# 3. display the names and locations of the files that are saved
+# 4. fix the sanity checking bug --> keeps showing the sanity checker from the previous iteration
+# 5. add options to change padlock leader, splint connector, probe length, and barcoding
+# 6. add file dialog for direct fasta file selection
+# 7. improve robustness --> switch default arguments for spd constructor to **kwargs
+# 8. port to executable for mac and pc
+# 9. fix style
+# 10. write documentation
+
 import tkinter, os
 import snail_probe_designer as SPD
 
@@ -47,9 +59,13 @@ class spd_gui(tkinter.Tk):
         goButton = tkinter.Button(self, text="Go", command=self.goClient)
         goButton.grid(column=2, row=0)
 
+        # add a button to choose an output directory
+        saveButton = tkinter.Button(self, text="Save", command=self.saveClient)
+        saveButton.grid(column=3, row=0)
+
         # add a button to quit
         quitButton = tkinter.Button(self, text="Quit", command=self.quitClient)
-        quitButton.grid(column=3, row=0)
+        quitButton.grid(column=4, row=0)
 
         # add text boxes for the melting temperature
         self.minMeltingTempVar = tkinter.StringVar()
@@ -90,6 +106,10 @@ class spd_gui(tkinter.Tk):
 
     def quitClient(self):
         exit()
+
+    def saveClient(self):
+        filename = tkinter.filedialog.askdirectory()
+        folder_path.set(filename)
 
     # def getParams(self):
     #     seq = self.sequenceVar.get()
