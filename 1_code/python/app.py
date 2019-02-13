@@ -14,12 +14,13 @@
 # 4. fix the sanity checking bug --> keeps showing the sanity checker from the previous iteration
 # 5. add options to change padlock leader, splint connector, probe length, and barcoding
 # 6. add file dialog for direct fasta file selection
-# 7. improve robustness --> switch default arguments for spd constructor to **kwargs
+# 7. improve robustness --> switch default arguments for spd constructor to **kwargs, add error checking
 # 8. port to executable for mac and pc
 # 9. fix style
 # 10. write documentation
 
 import tkinter, os
+from tkinter import filedialog
 import snail_probe_designer as SPD
 
 class spd_gui(tkinter.Tk):
@@ -32,6 +33,10 @@ class spd_gui(tkinter.Tk):
     def __init__(self, master=None):
         tkinter.Tk.__init__(self, master)
         self.master = master
+        # initialize a snail probe designer
+        # uses the default settings for gc, tm, size, and separation
+        self.spd = SPD.snail_probe_designer() 
+        # init the GUI
         self.initialize()
 
     def initialize(self):
@@ -46,46 +51,80 @@ class spd_gui(tkinter.Tk):
         # add a text box for the sequence
         self.sequenceVar = tkinter.StringVar()
         self.sequence = tkinter.Entry(self, textvariable=self.sequenceVar)
-        self.sequence.grid(column=0, row=0, sticky='EW')
+        self.sequence.grid(column=0, row=0, columnspan=2, sticky='EW')
         self.sequenceVar.set("Enter sequence here")
 
         # add a text box for the gene name
         self.geneNameVar = tkinter.StringVar()
         self.geneName = tkinter.Entry(self, textvariable=self.geneNameVar)
-        self.geneName.grid(column=1, row=0, sticky='EW')
+        self.geneName.grid(column=2, row=0, columnspan=2, sticky='EW')
         self.geneNameVar.set("Enter gene name here")
 
         # add a button to generate probes
         goButton = tkinter.Button(self, text="Go", command=self.goClient)
-        goButton.grid(column=2, row=0)
+        goButton.grid(column=4, row=0)
+        goButton.bind("<Return>", self.goClient)
 
         # add a button to choose an output directory
+        self.saveFolder = ""
         saveButton = tkinter.Button(self, text="Save", command=self.saveClient)
-        saveButton.grid(column=3, row=0)
+        saveButton.grid(column=4, row=1)
 
         # add a button to quit
         quitButton = tkinter.Button(self, text="Quit", command=self.quitClient)
-        quitButton.grid(column=4, row=0)
+        quitButton.grid(column=4, row=7)
 
         # add text boxes for the melting temperature
+        minMeltingTempLabel = tkinter.Label(self, text="Minimum melting temperature (C)", anchor='w', fg='black', bg='white')
+        minMeltingTempLabel.grid(column=0, row=1, sticky='EW')
         self.minMeltingTempVar = tkinter.StringVar()
         self.minMeltingTemp = tkinter.Entry(self, textvariable=self.minMeltingTempVar)
-        self.minMeltingTemp.grid(column=0, row=1, sticky='EW')
-        self.minMeltingTempVar.set("Minimum melting temperature (C)")
+        self.minMeltingTemp.grid(column=1, row=1, sticky='EW')
+        self.minMeltingTempVar.set(50)
+        maxMeltingTempLabel = tkinter.Label(self, text="Maximum melting temperature (C)", anchor='w', fg='black', bg='white')
+        maxMeltingTempLabel.grid(column=2, row=1, sticky='EW')
         self.maxMeltingTempVar = tkinter.StringVar()
         self.maxMeltingTemp = tkinter.Entry(self, textvariable=self.maxMeltingTempVar)
-        self.maxMeltingTemp.grid(column=1, row=1, sticky='EW')
-        self.maxMeltingTempVar.set("Maximum melting temperature (C)")
+        self.maxMeltingTemp.grid(column=3, row=1, sticky='EW')
+        self.maxMeltingTempVar.set(65)
 
-        # add text boxes for the GC content
+        # add text boxes for the probe lengths
+        minLengthLabel = tkinter.Label(self, text="Minimum Length (bp)", anchor='w', fg='black', bg='white')
+        minLengthLabel.grid(column=0, row=2, sticky='EW')
+        self.minLengthVar = tkinter.StringVar()
+        self.minLength = tkinter.Entry(self, textvariable=self.minLengthVar)
+        self.minLength.grid(column=1, row=2, sticky='EW')
+        self.minLengthVar.set(18)
+        maxLengthLabel = tkinter.Label(self, text="Maximum Length (bp)", anchor='w', fg='black', bg='white')
+        maxLengthLabel.grid(column=2, row=2, sticky='EW')
+        self.maxLengthVar = tkinter.StringVar()
+        self.maxLength = tkinter.Entry(self, textvariable=self.maxLengthVar)
+        self.maxLength.grid(column=3, row=2, sticky='EW')
+        self.maxLengthVar.set(24)
+
+        # add text boxes for the G content
+        gContentLabel = tkinter.Label(self, text="G Content (%)", anchor='w', fg='black', bg='white')
+        gContentLabel.grid(column=0, row=3, sticky='EW')
         self.gContentVar = tkinter.StringVar()
         self.gContent = tkinter.Entry(self, textvariable=self.gContentVar)
-        self.gContent.grid(column=2, row=1, sticky='EW')
-        self.gContentVar.set("G Content")
-        self.cContentVar = tkinter.StringVar()
-        self.cContent = tkinter.Entry(self, textvariable=self.cContentVar)
-        self.cContent.grid(column=3, row=1, sticky='EW')
-        self.cContentVar.set("C Content")
+        self.gContent.grid(column=1, row=3, sticky='EW')
+        self.gContentVar.set(30)
+
+        # add text boxes for the max separation
+        separationLabel = tkinter.Label(self, text="Maximum Separation (bp)", anchor='w', fg='black', bg='white')
+        separationLabel.grid(column=2, row=3, sticky='EW')
+        self.separationVar = tkinter.StringVar()
+        self.separation = tkinter.Entry(self, textvariable=self.separationVar)
+        self.separation.grid(column=3, row=3, sticky='EW')
+        self.separationVar.set(4)
+
+        # add text box for number of probes to return
+        numProbesLabel = tkinter.Label(self, text="Number of Probes", anchor='w', fg='black', bg='white')
+        numProbesLabel.grid(column=0, row=4, sticky='EW')
+        self.numProbesVar = tkinter.StringVar()
+        self.numProbes = tkinter.Entry(self, textvariable=self.numProbesVar)
+        self.numProbes.grid(column=1, row=4, sticky='EW')
+        self.numProbesVar.set(5)
 
         # add a label for instructions
         self.instructionsLabelVar = tkinter.StringVar()
@@ -94,62 +133,68 @@ class spd_gui(tkinter.Tk):
         	anchor='w', 
         	fg='black', 
         	bg='white', wraplength=300, justify=tkinter.LEFT)
-        instructionsLabel.grid(column=0, row=2, columnspan=4, sticky='EW')
+        instructionsLabel.grid(column=0, row=5, columnspan=4, sticky='EW')
         instructions = "\nWelcome to the SNAIL Probe Designer\nTo use the program:\n1. Input the sequence you want to design probes for into the first box\n2. Input the name of the sequence into the second box\n3. Click 'Go'\n\nThe most highly rated probe targets will be displayed in this window, and the full probes will be written to a csv and Eurogentec formatted excel file. Finally, a 'sanity check' of the sequence with the probe targets highlighted will be written to a separate html file."
         self.instructionsLabelVar.set(instructions)
 
         # add a label for output
         self.outputLabelVar = tkinter.StringVar()
-        output_label = tkinter.Label(self, textvariable=self.outputLabelVar, anchor='w', fg='blue', bg='white')
-        output_label.grid(column=0, row=3, columnspan=4, sticky='EW')
+        outputLabel = tkinter.Label(self, textvariable=self.outputLabelVar, anchor='w', fg='blue', bg='white')
+        outputLabel.grid(column=0, row=6, columnspan=4, sticky='EW')
 
+        # add a label to show what files were saved
+        self.fileOutputVar = tkinter.StringVar()
+        fileOutputLabel = tkinter.Label(self, textvariable=self.fileOutputVar, anchor='w', fg='green', bg='white')
+        fileOutputLabel.grid(column=0, row=7, columnspan=4, sticky='EW')
+
+        # finalize tkinter setup
+        self.update()
+        self.geometry(self.geometry())
 
     def quitClient(self):
         exit()
 
     def saveClient(self):
-        filename = tkinter.filedialog.askdirectory()
-        folder_path.set(filename)
+        # get the directory and set file names
+        dirname = tkinter.filedialog.askdirectory()
+        self.saveFolder = dirname
+        csv_filename = self.saveFolder+"/{}_probes.csv".format(self.geneNameVar.get().lower())
+        excel_filename = self.saveFolder+"/{}s_probes_eurogentec.xlsx".format(self.geneNameVar.get().lower())
+        html_filename = self.saveFolder+"/{}_sanity_check.html".format(self.geneNameVar.get().lower())
+        out_str = "Files written:\n"+csv_filename+"\n"+excel_filename+"\n"+html_filename
 
-    # def getParams(self):
-    #     seq = self.sequenceVar.get()
-    #     geneName = self.geneNameVar.get()
-    #     minT = self.minMeltingTempVar.get()
-    #     maxT = self.maxMeltingTempVar.get()
-    #     gCont = self.gContentVar.get()
-    #     cCont = self.cContentVar.get()
+        # get the number of probes to save
+        num_probes = int(self.numProbesVar.get())
 
-    #     # check to make sure the input is numeric    	
+        # write out the files
+        self.spd.write_probes_to_csv(csv_filename, num_probes=num_probes)
+        self.spd.write_probes_to_eurogentec(excel_filename, num_probes=num_probes)
+        self.spd.sanity_check_probes(html_filename, n_probes=num_probes)
 
+        # show the ouput files
+        self.fileOutputVar.set(out_str)
 
     def goClient(self):
-    	# get the parameters from the GUI
-        seq = self.sequenceVar.get()
-        geneName = self.geneNameVar.get()
-        minT = float(self.minMeltingTempVar.get())
-        maxT = float(self.maxMeltingTempVar.get())
-        tm = (minT, maxT)
-        gCont = float(self.gContentVar.get())
-        cCont = float(self.cContentVar.get())
-        gc = (gCont, cCont)
+    	# get the parameters from the GUI 
+        # set the gc, tm, size, and separation
+        self.spd.probe_tm = (float(self.minMeltingTempVar.get()), float(self.maxMeltingTempVar.get()))
+        self.spd.probe_gc = (float(self.gContentVar.get()), 100-float(self.gContentVar.get())) 
+        self.spd.probe_sep = int(self.separationVar.get())
+        self.spd.probe_size = (int(self.minLengthVar.get()), int(self.maxLengthVar.get()))
+        self.spd.prime(self.sequenceVar.get(), self.geneNameVar.get())
+        self.spd.get_kmers()
+        self.spd.score_kmers()
 
-        # uses the default settings for gc, tm, size, and separation
-        spd=SPD.snail_probe_designer(tm=tm, gc=gc) 
-
-        spd.prime(seq, geneName)
-        spd.get_kmers()
-        spd.score_kmers()
-        spd.write_probes_to_csv("../../2_output/temp/{}_probes.csv".format(geneName.lower()), num_probes=3)
-        spd.write_probes_to_eurogentec("../../2_output/temp/{}_probes_eurogentec.xlsx".format(geneName.lower()))
-        print("{} potential probe pairs found.".format(len(spd.scored_probe_pairs)))
+        print("{} potential probe pairs found.".format(len(self.spd.scored_probe_pairs)))
 
         # print out the top probe pairs, one per line
-        top_probes = spd.get_top_probes()
-        out_str = "The best {} probe pairs are:\n".format(len(top_probes))
-        for i in range(len(top_probes)):
-            out_str += str(top_probes[i]) + "\n"
+        top_probes = self.spd.get_top_probes(top_x=int(self.numProbesVar.get()))
+        out_str = "No probe pairs meeting criteria exactly found."
+        if len(top_probes) > 0:
+            out_str = "The best {} probe pairs are:\n".format(len(top_probes))
+            for i in range(len(top_probes)):
+                out_str += str(top_probes[i]) + "\n"
         self.outputLabelVar.set(out_str)
-        spd.sanity_check_probes('../../2_output/temp/sanity_check.html')
 
     def OnPressEnter(self, event):
         """

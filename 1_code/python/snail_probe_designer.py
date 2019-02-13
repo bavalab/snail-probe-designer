@@ -298,6 +298,7 @@ class snail_probe_designer:
             for i in range(len(self.sequence)):
                 if i+2*(p)+self.probe_sep > len(self.sequence): 
                     break
+                # reverse complement the probes and check their separation
                 p1 = rev_comp(self.sequence[i:i+p])
                 p2 = rev_comp(self.sequence[i+self.probe_sep+p:i+self.probe_sep+(2*p)])
                 # is the GC content within parameters?
@@ -329,14 +330,16 @@ class snail_probe_designer:
         spd.get_kmers()
         spd.score_kmers()
         """
-        scored_probe_pairs = []
-        for probe_pair in self.probe_pairs:
-            self_score_0 = get_max_alignment_score(probe_pair[0], probe_pair[0][::-1])
-            self_score_1 = get_max_alignment_score(probe_pair[1], probe_pair[1][::-1])
-            inter_score = get_max_alignment_score(probe_pair[0], probe_pair[1][::-1])
-            mixed_score = ((1/float(3))*self_score_0 + (1/float(3))*self_score_1 + (1/float(3))*inter_score)/float(3)
-            scored_probe_pairs.append((probe_pair[0], probe_pair[1], probe_pair[2], mixed_score))
-        self.scored_probe_pairs = sorted(scored_probe_pairs, key=lambda tup: tup[3])
+        self.scored_probe_pairs = []
+        if len(self.probe_pairs) > 0:
+            probe_pairs_scored = []
+            for probe_pair in self.probe_pairs:
+                self_score_0 = get_max_alignment_score(probe_pair[0], probe_pair[0][::-1])
+                self_score_1 = get_max_alignment_score(probe_pair[1], probe_pair[1][::-1])
+                inter_score = get_max_alignment_score(probe_pair[0], probe_pair[1][::-1])
+                mixed_score = ((1/float(3))*self_score_0 + (1/float(3))*self_score_1 + (1/float(3))*inter_score)/float(3)
+                probe_pairs_scored.append((probe_pair[0], probe_pair[1], probe_pair[2], mixed_score))
+            self.scored_probe_pairs = sorted(probe_pairs_scored, key=lambda tup: tup[3])
 
     def get_top_probes(self, top_x = 5, no_overlap=True):
         """
@@ -356,28 +359,31 @@ class snail_probe_designer:
         spd.score_kmers()
         spd.get_top_probess()
         """
+        if len(self.scored_probe_pairs) > 0:
+            # init a list of probes that are in the top x and meet additional criteria
+            top_probes = [self.scored_probe_pairs[0]]
 
-        # init a list of probes that are in the top x and meet additional criteria
-        top_probes = [self.scored_probe_pairs[0]]
+            # get the number of probes in the designer
+            n_probes = len(self.scored_probe_pairs)
 
-        # get the number of probes in the designer
-        n_probes = len(self.scored_probe_pairs)
-
-        # for each probe pair in the self contained list of pairs (until top_x is met)
-        for i in range(1, n_probes):
-            new_probe = self.scored_probe_pairs[i]
-            overlap_flag = 0
-            # check to see if it overlaps with a top probe pair
-            for probe in top_probes:
-                if not self.check_overlaps(new_probe, probe):
-                    overlap_flag += 1
-            # if the new probe does not overlap with a top probe, add it
-            if overlap_flag is len(top_probes):
-                top_probes.append(new_probe)
-            # if the list is long enough break and return
-            if len(top_probes) is top_x:
-                break
-        return(top_probes)
+            # for each probe pair in the self contained list of pairs (until top_x is met)
+            for i in range(1, n_probes):
+                new_probe = self.scored_probe_pairs[i]
+                overlap_flag = 0
+                # check to see if it overlaps with a top probe pair
+                for probe in top_probes:
+                    if not self.check_overlaps(new_probe, probe):
+                        overlap_flag += 1
+                # if the new probe does not overlap with a top probe, add it
+                if overlap_flag is len(top_probes):
+                    top_probes.append(new_probe)
+                # if the list is long enough break and return
+                if len(top_probes) is top_x:
+                    break
+            return(top_probes)
+        else:
+            print("No probe pairs found.")
+            return([])
 
     def write_probes_to_csv(self, filename, num_probes='all'):
         """
