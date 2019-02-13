@@ -8,18 +8,19 @@
 # Allows you to upload a fasta file or input a fasta sequence to generate smFISH SNAIL probes 
 
 # TODOs:
-# 1. change the GC content selection to a slider for G content, then derive c content from 100-G content
-# 2. add a directory selection dialog to get the output directory
-# 3. display the names and locations of the files that are saved
-# 4. fix the sanity checking bug --> keeps showing the sanity checker from the previous iteration
-# 5. add options to change padlock leader, splint connector, probe length, and barcoding
+# 1a. change the GC content selection to a slider for G content
+# 1b. derive c content from 100-G content - DONE
+# 2. add a directory selection dialog to get the output directory - DONE
+# 3. display the names and locations of the files that are saved - DONE
+# 4. fix the sanity checking bug --> keeps showing the sanity checker from the previous iteration - DONE
+# 5. add options to change padlock leader, splint connector, probe length (DONE), and barcoding
 # 6. add file dialog for direct fasta file selection
 # 7. improve robustness --> switch default arguments for spd constructor to **kwargs, add error checking
 # 8. port to executable for mac and pc
 # 9. fix style
 # 10. write documentation
 
-import tkinter, os
+import tkinter, os, sys
 from tkinter import filedialog
 import snail_probe_designer as SPD
 
@@ -132,27 +133,33 @@ class spd_gui(tkinter.Tk):
         	textvariable=self.instructionsLabelVar, 
         	anchor='w', 
         	fg='black', 
-        	bg='white', wraplength=300, justify=tkinter.LEFT)
+        	bg='white', wraplength=500, justify=tkinter.LEFT)
         instructionsLabel.grid(column=0, row=5, columnspan=4, sticky='EW')
-        instructions = "\nWelcome to the SNAIL Probe Designer\nTo use the program:\n1. Input the sequence you want to design probes for into the first box\n2. Input the name of the sequence into the second box\n3. Click 'Go'\n\nThe most highly rated probe targets will be displayed in this window, and the full probes will be written to a csv and Eurogentec formatted excel file. Finally, a 'sanity check' of the sequence with the probe targets highlighted will be written to a separate html file."
+        instructions = "\nWelcome to the SNAIL Probe Designer\nTo use the program:\n1. Input the sequence you want to design probes for into the first box\n2. Input the name of the sequence into the second box\n3. Click 'Go'\n\nThe indicated number of probe targets will be displayed in his window in the order of best hybridization score. The same fully structured probes can be written to csv and Eurogentec formatted Excel files by clicking 'Save'. Additionally, a 'sanity check' of the sequence with the probe targets highlighted will be written to a separate html file in the same location. File names and locations will be displayed beneath the probe results.\n"
         self.instructionsLabelVar.set(instructions)
 
         # add a label for output
         self.outputLabelVar = tkinter.StringVar()
-        outputLabel = tkinter.Label(self, textvariable=self.outputLabelVar, anchor='w', fg='blue', bg='white')
+        outputLabel = tkinter.Label(self, textvariable=self.outputLabelVar, anchor='w', fg='blue', bg='white', wraplength=500, justify=tkinter.LEFT)
         outputLabel.grid(column=0, row=6, columnspan=4, sticky='EW')
 
         # add a label to show what files were saved
         self.fileOutputVar = tkinter.StringVar()
-        fileOutputLabel = tkinter.Label(self, textvariable=self.fileOutputVar, anchor='w', fg='green', bg='white')
+        fileOutputLabel = tkinter.Label(self, textvariable=self.fileOutputVar, anchor='w', fg='green', bg='white', wraplength=500, justify=tkinter.LEFT)
         fileOutputLabel.grid(column=0, row=7, columnspan=4, sticky='EW')
+
+        # add a label for the copyright
+        self.copyrightVar = tkinter.StringVar()
+        copyrightLabel = tkinter.Label(self, textvariable=self.copyrightVar, anchor='w', fg='black', bg='white')
+        copyrightLabel.grid(column=0, row=8, columnspan=5, sticky='EW')
+        self.copyrightVar.set(u"\u00A9 2019 Bava Lab, Institut Curie")
 
         # finalize tkinter setup
         self.update()
         self.geometry(self.geometry())
 
     def quitClient(self):
-        exit()
+        sys.exit()
 
     def saveClient(self):
         # get the directory and set file names
@@ -207,5 +214,5 @@ class spd_gui(tkinter.Tk):
 
 if __name__ == "__main__":
     app = spd_gui(None)
-    app.title("SNAIL Probe Designer")
+    app.title("SNAIL Probe Designer v0.0.1")
     app.mainloop()
