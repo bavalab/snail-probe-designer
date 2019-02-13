@@ -169,7 +169,7 @@ class spd_gui(tkinter.Tk):
         # write out the files
         self.spd.write_probes_to_csv(csv_filename, num_probes=num_probes)
         self.spd.write_probes_to_eurogentec(excel_filename, num_probes=num_probes)
-        self.spd.sanity_check_probes(html_filename, n_probes=num_probes)
+        self.spd.sanity_check_probes(html_filename, num_probes=num_probes)
 
         # show the ouput files
         self.fileOutputVar.set(out_str)

@@ -385,9 +385,9 @@ class snail_probe_designer:
             print("No probe pairs found.")
             return([])
 
-    def write_probes_to_csv(self, filename, num_probes='all'):
+    def write_probes_to_csv(self, filename, num_probes=5):
         """
-        Writes probes to a csv file in the order of their hybridization score
+        Writes a given number of probes to a csv file in the order of their hybridization score
 
         The file is formatted as a csv table (for easy opening in Excel). Even number probes are padlocks and odd number probes are splints. Example:
 
@@ -413,18 +413,13 @@ class snail_probe_designer:
         """
         structured_output = ""
         counter = 0
-        if num_probes is 'all':
-            for probe_pair in self.scored_probe_pairs:
-                structured_output += self.gene_name + "," + str(counter) + "," + self.gene_name + "_" + str(counter) + "," + self.padlock_leader + "," + probe_pair[0] + "," + self.padlock_barcode + "," + self.padlock_leader + probe_pair[0] + self.padlock_barcode + "\n"
-                counter += 1
-                structured_output += self.gene_name + "," + str(counter) + "," + self.gene_name + "_" + str(counter) + "," + "," + probe_pair[1] + "," + self.splint_connector + "," + probe_pair[1] + self.splint_connector + "\n"
-                counter += 1
-        else:
-            for probe_pair in self.scored_probe_pairs[:num_probes]:
-                structured_output += self.gene_name + "," + str(counter) + "," + self.gene_name + "_" + str(counter) + "," + self.padlock_leader + "," + probe_pair[0] + "," + self.padlock_barcode + "," + self.padlock_leader + probe_pair[0] + self.padlock_barcode + "\n"
-                counter += 1
-                structured_output += self.gene_name + "," + str(counter) + "," + self.gene_name + "_" + str(counter) + "," + "," + probe_pair[1] + "," + self.splint_connector + "," + probe_pair[1] + self.splint_connector + "\n"
-                counter += 1
+        probes_to_write = self.get_top_probes(top_x = num_probes)
+        for probe_pair in probes_to_write:
+            structured_output += self.gene_name + "," + str(counter) + "," + self.gene_name + "_" + str(counter) + "," + self.padlock_leader + "," + probe_pair[0] + "," + self.padlock_barcode + "," + self.padlock_leader + probe_pair[0] + self.padlock_barcode + "\n"
+            counter += 1
+            structured_output += self.gene_name + "," + str(counter) + "," + self.gene_name + "_" + str(counter) + "," + "," + probe_pair[1] + "," + self.splint_connector + "," + probe_pair[1] + self.splint_connector + "\n"
+            counter += 1
+
         outfile = open(filename, 'w')
         outfile.write(structured_output)
         outfile.close()
@@ -469,9 +464,10 @@ class snail_probe_designer:
             worksheet.write(0, col, header)
             col += 1
 
+        probes_to_write = self.get_top_probes(top_x = num_probes)
         # write the probes
         row, col, cntr = 1, 0, 0
-        for probe_pair in self.scored_probe_pairs[:num_probes]:
+        for probe_pair in probes_to_write:
             # isolate the padlock and splints
             padlock = self.padlock_leader[1:] + probe_pair[0] + self.padlock_barcode
             splint = probe_pair[1] + self.splint_connector
@@ -501,7 +497,7 @@ class snail_probe_designer:
         # finished writing, close the workbook
         workbook.close()
 
-    def sanity_check_probes(self, filename, n_probes=5, probes_to_hl=[]):
+    def sanity_check_probes(self, filename, num_probes=5, probes_to_hl=[]):
         """
         Creates a html file with the sequence in fasta format. Probe pairs are highlighted (splint and padlock). Useful for sanity checking the probes
         ---
@@ -518,7 +514,7 @@ class snail_probe_designer:
         # if no probes are provided, get the top_x probes
         if len(probes_to_hl) is 0:
             # get the reverse complement of the top n probes
-            top_probes = self.get_top_probes(top_x = n_probes)
+            top_probes = self.get_top_probes(top_x = num_probes)
             for probe_pair in top_probes:
                 probes_to_hl.append((probe_pair[0], probe_pair[1]))
         # reverse complement all of the probes
