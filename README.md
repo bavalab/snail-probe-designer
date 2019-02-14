@@ -38,3 +38,4 @@ The SEDAL and SNAIL combination produces STARMap, a three-part system to detect 
 For compilation with `pyinstaller`, use the conda prompt:  
 `activate py34`  
 `pyinstaller --onefile --windowed --distpath=D:\coding-projects\snail-probe-designer D:\coding-projects\snail-probe-designer\1_code\python\app.py`
+`deactivate`
