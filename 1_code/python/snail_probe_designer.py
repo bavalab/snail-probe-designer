@@ -231,7 +231,7 @@ class snail_probe_designer:
     Usage:
     spd = snail_probe_designer()
     """
-    def __init__(self, size=(18, 22), tm=(50.0, 65.0), gc=(30.0, 70.0), sep=4, padlock_barcode="AATTATTACTGAAACATACACTAAAGATA", padlock_leader="PACATTA", splint_connector="TAATGTTATCTT"):
+    def __init__(self, size=(18, 22), tm=(50.0, 65.0), gc=(30.0, 70.0), sep=(4), padlock_barcode="AATTATTACTGAAACATACACTAAAGATA", padlock_leader="PACATTA", splint_connector="TAATGTTATCTT"):
         self.probe_size = size 
         self.probe_tm = tm 
         self.probe_gc = gc 
@@ -239,6 +239,7 @@ class snail_probe_designer:
         self.padlock_barcode = padlock_barcode
         self.padlock_leader = padlock_leader
         self.splint_connector = splint_connector
+        self.top_probes = None
 
     def prime(self, seq_or_file, gene_name=None):
         """
@@ -280,40 +281,43 @@ class snail_probe_designer:
         Pseudocode:
         ---
         init a list of probe pairs stored as tuples
-        for each character index i in the sequence
-            if i+2(primer_size)+primer_sep > sequence length
-                stop and return the list of probe pairs because we hit the end
-            p1 = substring from i to i+primer_size
-            p2 = substring from i+primer_sep+primer_size to i+primer_sep+(2*primer_size)
-            if gc of p1 or p2 > primer_gc
-                continue to next iteration
-            anneal_temp = calculate the probe annealing temperatures
-            if anneal_temp for p1 or p2 > primer_tm
-                continue to next iteration
-            add (p1,p2) to the list of probe pairs
+        for each potential probe separation
+            for each potential probe length
+                for each character index i in the sequence
+                    if i+2(primer_size)+primer_sep > sequence length
+                        stop and return the list of probe pairs because we hit the end
+                    p1 = substring from i to i+primer_size
+                    p2 = substring from i+primer_sep+primer_size to i+primer_sep+(2*primer_size)
+                    if gc of p1 or p2 > primer_gc
+                        continue to next iteration
+                    anneal_temp = calculate the probe annealing temperatures
+                    if anneal_temp for p1 or p2 > primer_tm
+                        continue to next iteration
+                    add (p1,p2) to the list of probe pairs
             
         """
         self.probe_pairs = []
-        for p in range(min(self.probe_size), max(self.probe_size)+1):
-            for i in range(len(self.sequence)):
-                if i+2*(p)+self.probe_sep > len(self.sequence): 
-                    break
-                # reverse complement the probes and check their separation
-                p1 = rev_comp(self.sequence[i:i+p])
-                p2 = rev_comp(self.sequence[i+self.probe_sep+p:i+self.probe_sep+(2*p)])
-                # is the GC content within parameters?
-                if not check_gc(self.probe_gc, p1) and not check_gc(self.probe_gc, p2):
-                    continue
-                # calculate the primer temperatures
-                temp_p1 = calc_tm_simple(p1)
-                temp_p2 = calc_tm_simple(p2)
-                # are the two primers close enough in melting temperature?
-                if math.fabs(temp_p1 - temp_p2) >= 5.0:
-                    continue
-                # are the primers within the desired melting temperature range?
-                if min(temp_p1, temp_p2) < self.probe_tm[0] or max(temp_p1, temp_p2) > self.probe_tm[1]:
-                    continue
-                self.probe_pairs.append((p1, p2, math.fabs(temp_p1 - temp_p2)))
+        for sep in self.probe_sep:
+            for p in range(min(self.probe_size), max(self.probe_size)+1):
+                for i in range(len(self.sequence)):
+                    if i+2*(p)+sep > len(self.sequence): 
+                        break
+                    # reverse complement the probes and check their separation
+                    p1 = rev_comp(self.sequence[i:i+p])
+                    p2 = rev_comp(self.sequence[i+sep+p:i+sep+(2*p)])
+                    # is the GC content within parameters?
+                    if not check_gc(self.probe_gc, p1) and not check_gc(self.probe_gc, p2):
+                        continue
+                    # calculate the primer temperatures
+                    temp_p1 = calc_tm_simple(p1)
+                    temp_p2 = calc_tm_simple(p2)
+                    # are the two primers close enough in melting temperature?
+                    if math.fabs(temp_p1 - temp_p2) >= 5.0:
+                        continue
+                    # are the primers within the desired melting temperature range?
+                    if min(temp_p1, temp_p2) < self.probe_tm[0] or max(temp_p1, temp_p2) > self.probe_tm[1]:
+                        continue
+                    self.probe_pairs.append((p1, p2, math.fabs(temp_p1 - temp_p2)))
 
     def score_kmers(self):
         """
@@ -339,9 +343,9 @@ class snail_probe_designer:
                 inter_score = get_max_alignment_score(probe_pair[0], probe_pair[1][::-1])
                 mixed_score = ((1/float(3))*self_score_0 + (1/float(3))*self_score_1 + (1/float(3))*inter_score)/float(3)
                 probe_pairs_scored.append((probe_pair[0], probe_pair[1], probe_pair[2], mixed_score))
-            self.scored_probe_pairs = sorted(probe_pairs_scored, key=lambda tup: tup[3])
+            self.scored_probe_pairs = sorted(probe_pairs_scored, key=lambda tup: (tup[2], tup[3]))
 
-    def get_top_probes(self, top_x = 5, no_overlap=True):
+    def get_top_probes(self, top_x = 5):
         """
         Return the top X kmers (the X number of kmers with the lowest scores)
 
@@ -361,7 +365,7 @@ class snail_probe_designer:
         """
         if len(self.scored_probe_pairs) > 0:
             # init a list of probes that are in the top x and meet additional criteria
-            top_probes = [self.scored_probe_pairs[0]]
+            self.top_probes = [self.scored_probe_pairs[0]]
 
             # get the number of probes in the designer
             n_probes = len(self.scored_probe_pairs)
@@ -371,19 +375,18 @@ class snail_probe_designer:
                 new_probe = self.scored_probe_pairs[i]
                 overlap_flag = 0
                 # check to see if it overlaps with a top probe pair
-                for probe in top_probes:
+                for probe in self.top_probes:
                     if not self.check_overlaps(new_probe, probe):
                         overlap_flag += 1
                 # if the new probe does not overlap with a top probe, add it
-                if overlap_flag is len(top_probes):
-                    top_probes.append(new_probe)
+                if overlap_flag is len(self.top_probes):
+                    self.top_probes.append(new_probe)
                 # if the list is long enough break and return
-                if len(top_probes) is top_x:
+                if len(self.top_probes) is top_x:
                     break
-            return(top_probes)
         else:
             print("No probe pairs found.")
-            return([])
+        return(self.top_probes)
 
     def write_probes_to_csv(self, filename, num_probes=5):
         """
@@ -413,7 +416,7 @@ class snail_probe_designer:
         """
         structured_output = ""
         counter = 0
-        probes_to_write = self.get_top_probes(top_x = num_probes)
+        probes_to_write = self.top_probes if self.top_probes is not None else self.get_top_probes(top_x = num_probes)
         for probe_pair in probes_to_write:
             structured_output += self.gene_name + "," + str(counter) + "," + self.gene_name + "_" + str(counter) + "," + self.padlock_leader + "," + probe_pair[0] + "," + self.padlock_barcode + "," + self.padlock_leader + probe_pair[0] + self.padlock_barcode + "\n"
             counter += 1
@@ -464,7 +467,7 @@ class snail_probe_designer:
             worksheet.write(0, col, header)
             col += 1
 
-        probes_to_write = self.get_top_probes(top_x = num_probes)
+        probes_to_write = self.top_probes if self.top_probes is not None else self.get_top_probes(top_x = num_probes)
         # write the probes
         row, col, cntr = 1, 0, 0
         for probe_pair in probes_to_write:
@@ -514,7 +517,7 @@ class snail_probe_designer:
         # if no probes are provided, get the top_x probes
         if len(probes_to_hl) is 0:
             # get the reverse complement of the top n probes
-            top_probes = self.get_top_probes(top_x = num_probes)
+            top_probes = self.top_probes if self.top_probes is not None else self.get_top_probes(top_x = num_probes)
             for probe_pair in top_probes:
                 probes_to_hl.append((probe_pair[0], probe_pair[1]))
         # reverse complement all of the probes
