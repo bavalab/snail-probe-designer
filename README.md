@@ -1,5 +1,5 @@
-# snail-probedesigner-test
-Created by Francesca Zaniboni, Eric Cramer
+# FISH Probe Designers
+Created by Francesca Zaniboni and Eric Cramer
 Created on 2019-02-08 14:15:38.845405
 ## Project Description 
 A program to identify and construct sequences that can be used to design probe systems Single Molecule Fluorescence In Situ Hybridization experiments (smFISH). Specifically, the probe designer creates probes for SNAIL Proximity Ligation Assays. The SNAIL probe scheme is flexible, specific, and highly multiplexible, as demonstrated by [Wang et al (2018)](http://science.sciencemag.org/content/361/6400/eaat5691/tab-figures-data) in their STARMap method. SNAIL probes can be barcoded and read in situ using the SEDAL probe method.
@@ -14,7 +14,27 @@ And from Figure 3A of the STARMap paper:
 
 The SEDAL and SNAIL combination produces STARMap, a three-part system to detect _n_ mRNA transcripts _in situ_ with fluorescence microscopy. First tissue is cleared of lipids and unfixed proteins using the [CLARITY](http://clarityresourcecenter.org/) method. Second, a set of SNAIL splint and padlock probes are hybridized to the target RNAs. Finally, a series of _reading_ and _fluorescent_ probes are used to readout a barcode embedded in the padlock portion of the SNAIL probe (thus uniquely identifying the RNA transcript). 
 
-## Notes
+## TODOs
++ change the GC content selection to a slider for G content in app
++ derive c content from 100-G content - DONE
++ add a directory selection dialog to get the output directory - DONE
++ display the names and locations of the files that are saved - DONE
++ re-format the sanity checker
++ add probe length adjustments (DONE)
++ add file dialog for direct fasta file selection
++ add multiple fasta sequence support
++ switch default arguments for spd constructor to kwargs
++ add error and variable type checking
++ add "plug and play" for probe designs
+	- Ex. switching between SNAIL and PLAYR style probes
+	- add options to change padlock leader and splint connector
+	- barcoding options
+		+ add imports for barcode to gene lookup table
++ port to executable for mac and pc
++ fix style
++ write documentation
+
+## General Notes (to self)
 For compilation with `pyinstaller`, use the conda prompt:  
 `activate py34`  
 `pyinstaller --onefile --windowed --distpath=D:\coding-projects\snail-probe-designer D:\coding-projects\snail-probe-designer\1_code\python\app.py`
