@@ -186,7 +186,7 @@ class spd_gui(tkinter.Tk):
         # set the gc, tm, size, and separation
         self.spd.probe_tm = (float(self.minMeltingTempVar.get()), float(self.maxMeltingTempVar.get()))
         self.spd.probe_gc = (float(self.gContentVar.get()), 100-float(self.gContentVar.get())) 
-        self.spd.probe_sep = int(self.separationVar.get())
+        self.spd.probe_sep = (0, int(self.separationVar.get()))
         self.spd.probe_size = (int(self.minLengthVar.get()), int(self.maxLengthVar.get()))
         self.spd.prime(self.sequenceVar.get(), self.geneNameVar.get())
         self.spd.get_kmers()

@@ -231,7 +231,7 @@ class snail_probe_designer:
     Usage:
     spd = snail_probe_designer()
     """
-    def __init__(self, size=(18, 22), tm=(50.0, 65.0), gc=(30.0, 70.0), sep=(4), padlock_barcode="AATTATTACTGAAACATACACTAAAGATA", padlock_leader="PACATTA", splint_connector="TAATGTTATCTT"):
+    def __init__(self, size=(18, 22), tm=(50.0, 65.0), gc=(30.0, 70.0), sep=(0, 4), padlock_barcode="AATTATTACTGAAACATACACTAAAGATA", padlock_leader="PACATTA", splint_connector="TAATGTTATCTT"):
         self.probe_size = size 
         self.probe_tm = tm 
         self.probe_gc = gc 
@@ -297,7 +297,7 @@ class snail_probe_designer:
             
         """
         self.probe_pairs = []
-        for sep in self.probe_sep:
+        for sep in range(self.probe_sep[0], self.probe_sep[1]):
             for p in range(min(self.probe_size), max(self.probe_size)+1):
                 for i in range(len(self.sequence)):
                     if i+2*(p)+sep > len(self.sequence): 
