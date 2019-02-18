@@ -166,7 +166,7 @@ class spd_gui(tkinter.Tk):
         dirname = tkinter.filedialog.askdirectory()
         self.saveFolder = dirname
         csv_filename = self.saveFolder+"/{}_probes.csv".format(self.geneNameVar.get().lower())
-        excel_filename = self.saveFolder+"/{}s_probes_eurogentec.xlsx".format(self.geneNameVar.get().lower())
+        excel_filename = self.saveFolder+"/{}_probes_eurogentec.xlsx".format(self.geneNameVar.get().lower())
         html_filename = self.saveFolder+"/{}_sanity_check.html".format(self.geneNameVar.get().lower())
         out_str = "Files written:\n"+csv_filename+"\n"+excel_filename+"\n"+html_filename
 
