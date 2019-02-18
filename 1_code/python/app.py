@@ -197,7 +197,7 @@ class spd_gui(tkinter.Tk):
         # print out the top probe pairs, one per line
         top_probes = self.spd.get_top_probes(top_x=int(self.numProbesVar.get()))
         out_str = "No probe pairs meeting criteria exactly found."
-        if len(top_probes) > 0:
+        if top_probes is not None:
             out_str = "The best {} probe pairs are:\n".format(len(top_probes))
             for i in range(len(top_probes)):
                 out_str += str(top_probes[i]) + "\n"
@@ -214,5 +214,5 @@ class spd_gui(tkinter.Tk):
 
 if __name__ == "__main__":
     app = spd_gui(None)
-    app.title("SNAIL Probe Designer v0.0.1")
+    app.title("SNAIL Probe Designer v0.0.3")
     app.mainloop()
