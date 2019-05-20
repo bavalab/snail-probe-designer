@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 
 SNAIL Probe Designer class and associated functions
@@ -264,6 +265,7 @@ class snail_probe_designer:
                 self.fasta_header = next(header)[1:].strip() # removes the leading ">"
                 self.sequence = "".join(s.strip() for s in next(faiter))
         else:
+            self.fasta_header = self.gene_name
             self.sequence = seq_or_file
 
         # clean the sequence
