@@ -2,3 +2,5 @@ __pycache__*
 *.pyc
 1_code/python/.ipynb_checkpoints/*
 $*
+2_output/temp/*
+
