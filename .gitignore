@@ -2,5 +2,7 @@ __pycache__*
 *.pyc
 1_code/python/.ipynb_checkpoints/*
 $*
-2_output/temp/*
+2_output/temp/*.csv
+2_output/temp/*.xlsx
+2_output/temp/*.html
 
